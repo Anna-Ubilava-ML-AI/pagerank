@@ -119,7 +119,51 @@ def iterate_pagerank(corpus, damping_factor):
     their estimated PageRank value (a value between 0 and 1). All
     PageRank values should sum to 1.
     """
-    raise NotImplementedError
+    N_pages = len(corpus)
+    
+    # a dictionary to track pages that link to each page
+    inbound_links = {page: set() for page in corpus}
+    for page, links in corpus.items():
+        for link in links:
+            inbound_links[link].add(page)
+    
+    # handel pages with no outgoing links
+    for page, links in corpus.items():
+        if not links:
+            # If a page has no links, we treat it as having links to all pages
+            corpus[page] = set(corpus.keys())
+    
+    # Start with assigning each page a rank of 1 / N (equal probability for all pages)
+    page_rank = {page: 1 / N_pages for page in corpus}
+    
+    # Iteratively calculate new ranks until convergence (based on all the previous set of PageRank values,)
+    while True:
+        new_rank = {}
+        max_change = 0
+        
+        for page in corpus:
+            # calculate the contribution from all pages that link to this page
+            link_sum = 0
+            for linking_page in inbound_links[page]:
+                link_sum += page_rank[linking_page] / len(corpus[linking_page])
+            
+            # Cclculate new rank using the PageRank formula
+            new_rank[page] = (1 - damping_factor) / N_pages + damping_factor * link_sum
+            
+            # track the largest change in rank
+            change = abs(new_rank[page] - page_rank[page])
+            max_change = max(max_change, change)
+        
+        # update page ranks
+        page_rank = new_rank
+        
+        # check for convergence (max value changes can be 0.001)
+        if max_change < 0.001:
+            break
+    
+    # normalization (to ensure the sum of all PageRanks is 1)
+    total = sum(page_rank.values())
+    return {page: rank / total for page, rank in page_rank.items()}
 
 
 if __name__ == "__main__":
